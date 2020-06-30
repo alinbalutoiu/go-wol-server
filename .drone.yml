@@ -1,0 +1,121 @@
+kind: pipeline
+type: docker
+name: linux-amd64
+
+platform:
+  arch: amd64
+  os: linux
+
+steps: 
+- name: build
+  image: golang:1.14-alpine
+  commands:
+  - sh scripts/build.sh
+  environment:
+    GOARCH: amd64
+    GOOS: linux
+
+- name: publish
+  image: plugins/docker
+  settings:
+    repo: alinbalutoiu/go-wol-server
+    tags: linux-amd64
+    username:
+      from_secret: docker_username
+    password:
+      from_secret: docker_password
+    build_args:
+      - OS=linux
+      - ARCH=amd64
+
+---
+kind: pipeline
+type: docker
+name: linux-arm64
+
+platform:
+  arch: arm64
+  os: linux
+
+steps:
+- name: build
+  image: golang:1.14-alpine
+  commands:
+  - sh scripts/build.sh
+  environment:
+    GOARCH: arm64
+    GOOS: linux
+
+- name: publish
+  image: plugins/docker
+  settings:
+    repo: alinbalutoiu/go-wol-server
+    tags: linux-arm64
+    username:
+      from_secret: docker_username
+    password:
+      from_secret: docker_password
+    build_args:
+      - OS=linux
+      - ARCH=arm64
+
+depends_on:
+- linux-amd64
+
+---
+kind: pipeline
+type: docker
+name: linux-arm
+
+platform:
+  arch: arm
+  os: linux
+
+steps:
+- name: build
+  image: golang:1.14-alpine
+  commands:
+  - sh scripts/build.sh
+  environment:
+    GOARCH: arm
+    GOOS: linux
+
+- name: publish
+  image: plugins/docker
+  settings:
+    repo: alinbalutoiu/go-wol-server
+    tags: linux-arm
+    username:
+      from_secret: docker_username
+    password:
+      from_secret: docker_password
+    build_args:
+      - OS=linux
+      - ARCH=arm
+
+depends_on:
+- linux-amd64
+
+---
+kind: pipeline
+type: docker
+name: manifest
+
+steps:
+- name: publish
+  image: plugins/manifest
+  settings:
+    username:
+      from_secret: docker_username
+    password:
+      from_secret: docker_password
+    target: alinbalutoiu/go-wol-server:latest
+    template: alinbalutoiu/go-wol-server:OS-ARCH
+    platforms:
+      - linux/amd64
+      - linux/arm
+      - linux/arm64
+
+depends_on:
+- linux-arm64
+- linux-arm
